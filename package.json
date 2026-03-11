@@ -1,0 +1,33 @@
+{
+  "name": "sitego-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deps": "mkdir -p /tmp/pnpm-store && pnpm config set store-dir /tmp/pnpm-store &&rm -rf node_modules && rm -rf pnpm-lock.yaml && rm -rf ~/.pnpm-store && pnpm store prune && pnpm install --no-prefer-frozen-lockfile",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "test": "vitest run",
+    "build": "pnpm -F sitego build"
+  },
+  "dependencies": {
+    "sitego": "link:packages/sitego",
+    "sitego-monorepo": "link:"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.18",
+    "oxfmt": "^0.37.0",
+    "oxlint": "^1.52.0",
+    "vitest": "^4.0.18"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "sitego-monorepo": "link:",
+      "sitego": "link:packages/sitego"
+    }
+  }
+}

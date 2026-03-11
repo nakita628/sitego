@@ -1,0 +1,8 @@
+{
+  "name": "sitego-fixtures",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "sitego": "workspace:*"
+  }
+}
