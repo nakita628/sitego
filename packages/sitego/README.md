@@ -12,16 +12,16 @@ npm install -D sitego
 
 ```bash
 # Convert HTML to Markdown
-sitego search https://example.com
+npx sitego search https://example.com
 
 # Fetch llms.txt by URL
-sitego docs https://hono.dev/llms.txt
+npx sitego docs https://hono.dev/llms.txt
 
 # Fetch llms.txt by config key
-sitego docs hono
+npx sitego docs hono
 
 # Fetch llms-full.txt by config key
-sitego docs hono --full
+npx sitego docs hono --full
 ```
 
 ## Config
