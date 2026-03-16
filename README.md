@@ -42,4 +42,4 @@ export default defineConfig({
 
 ## License
 
-MIT
+Distributed under the MIT License. See [LICENSE](https://github.com/nakita628/sitego?tab=MIT-1-ov-file) for more information.
