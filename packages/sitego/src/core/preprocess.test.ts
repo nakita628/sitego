@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 
 import { getTextContent } from './dom.ts'
 import { parseHtml } from './parser.ts'

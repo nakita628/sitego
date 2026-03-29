@@ -18,15 +18,14 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsgo --noEmit"
+    "typecheck": "tsgo --noEmit",
+    "release": "npm pkg fix && pnpm build && npm publish"
   },
   "dependencies": {
     "tsx": "^4.21.0"
   },
   "devDependencies": {
-    "@types/node": "^25.4.0",
-    "@typescript/native-preview": "7.0.0-dev.20260310.1",
-    "tsdown": "^0.21.1",
-    "typescript": "^5.9.3"
+    "@types/node": "^25.5.0",
+    "tsdown": "^0.21.7"
   }
 }

@@ -8,16 +8,19 @@
     "fmt": "vp fmt",
     "lint": "vp lint",
     "test": "vp test",
-    "build": "pnpm -F sitego build"
+    "coverage": "vp test --coverage",
+    "build": "pnpm -F sitego build",
+    "release": "pnpm -F sitego release"
   },
   "dependencies": {
     "sitego": "link:packages/sitego",
     "sitego-monorepo": "link:"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.0.18",
-    "vite-plus": "^0.1.12"
+    "@vitest/coverage-v8": "^4.1.2",
+    "vite-plus": "^0.1.14"
   },
+  "packageManager": "pnpm@10.33.0",
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
