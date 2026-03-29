@@ -1,7 +1,6 @@
 import { readConfig } from '../config/index.ts'
 import { htmlToMarkdown } from '../core/converter.ts'
 import { fetchResult } from '../helper/index.ts'
-import { parseCli } from '../utils/index.ts'
 
 const HELP_TEXT = `Usage: sitego [command] [options]
 
@@ -12,6 +11,59 @@ Commands:
 Options:
   --full           Use llm-full URL (with docs key)
   -h, --help       Display help`
+
+/**
+ * Parses CLI arguments into a typed command object.
+ *
+ * @remarks
+ * Supported commands:
+ * - `search <url>` — Fetch URL and convert HTML to Markdown
+ * - `docs <url>` — Fetch llms.txt by URL (pass-through, no conversion)
+ * - `docs <key>` — Fetch llms.txt by config key
+ * - `docs <key> --full` — Fetch llms-full.txt by config key
+ * - `-h` / `--help` — Show help
+ *
+ * Non-URL strings passed to `docs` are treated as config keys.
+ *
+ * @param args - CLI arguments (typically `process.argv.slice(2)`)
+ * @returns A discriminated union of `{ ok: true, value }` or `{ ok: false, error }`
+ */
+export function parseCli(args: readonly string[]):
+  | { readonly ok: true; readonly value: { readonly kind: 'search'; readonly url: string } }
+  | { readonly ok: true; readonly value: { readonly kind: 'docs'; readonly url: string } }
+  | {
+      readonly ok: true
+      readonly value: { readonly kind: 'docs-key'; readonly key: string; readonly full: boolean }
+    }
+  | { readonly ok: true; readonly value: { readonly kind: 'help' } }
+  | { readonly ok: false; readonly error: string } {
+  if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
+    return { ok: true, value: { kind: 'help' } }
+  }
+
+  const command = args[0]
+
+  if (command === 'search' && args.length >= 2) {
+    const url = args[1]
+    return url
+      ? { ok: true, value: { kind: 'search', url } }
+      : { ok: false, error: 'search command requires a URL argument.' }
+  }
+
+  if (command === 'docs' && args.length >= 2) {
+    const target = args[1]
+    if (!target) {
+      return { ok: false, error: 'docs command requires a URL or key argument.' }
+    }
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      return { ok: true, value: { kind: 'docs', url: target } }
+    }
+    const full = args.includes('--full')
+    return { ok: true, value: { kind: 'docs-key', key: target, full } }
+  }
+
+  return { ok: false, error: `Unknown command: ${command}. Run with --help for usage.` }
+}
 
 /**
  * Main CLI entry point. Parses arguments and dispatches to the appropriate command.

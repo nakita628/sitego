@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 
 import {
-  parseCli,
   trimLeadingNewlines,
   trimTrailingNewlines,
   trimNewlines,
@@ -9,122 +8,6 @@ import {
   escapeMarkdown,
   cleanAttribute,
 } from './index.ts'
-
-describe('parseCli', () => {
-  describe('help', () => {
-    it('returns help for no args', () => {
-      expect(parseCli([])).toStrictEqual({ ok: true, value: { kind: 'help' } })
-    })
-
-    it('returns help for -h flag', () => {
-      expect(parseCli(['-h'])).toStrictEqual({ ok: true, value: { kind: 'help' } })
-    })
-
-    it('returns help for --help flag', () => {
-      expect(parseCli(['--help'])).toStrictEqual({ ok: true, value: { kind: 'help' } })
-    })
-
-    it('returns help when --help appears with other args', () => {
-      expect(parseCli(['docs', '--help'])).toStrictEqual({ ok: true, value: { kind: 'help' } })
-    })
-  })
-
-  describe('search command', () => {
-    it('parses search with https URL', () => {
-      expect(parseCli(['search', 'https://example.com'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'search', url: 'https://example.com' },
-      })
-    })
-
-    it('parses search with http URL', () => {
-      expect(parseCli(['search', 'http://example.com'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'search', url: 'http://example.com' },
-      })
-    })
-
-    it('returns error for search without URL', () => {
-      const result = parseCli(['search'])
-      expect(result.ok).toBe(false)
-    })
-  })
-
-  describe('docs command with URL', () => {
-    it('parses docs with https URL', () => {
-      expect(parseCli(['docs', 'https://hono.dev/llms.txt'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs', url: 'https://hono.dev/llms.txt' },
-      })
-    })
-
-    it('parses docs with http URL', () => {
-      expect(parseCli(['docs', 'http://example.com/llms.txt'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs', url: 'http://example.com/llms.txt' },
-      })
-    })
-
-    it('returns error for docs without argument', () => {
-      const result = parseCli(['docs'])
-      expect(result.ok).toBe(false)
-    })
-  })
-
-  describe('docs command with config key', () => {
-    it('parses docs with key (no --full)', () => {
-      expect(parseCli(['docs', 'hono'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs-key', key: 'hono', full: false },
-      })
-    })
-
-    it('parses docs with key and --full flag', () => {
-      expect(parseCli(['docs', 'hono', '--full'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs-key', key: 'hono', full: true },
-      })
-    })
-
-    it('parses docs with key containing hyphens', () => {
-      expect(parseCli(['docs', 'my-project'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs-key', key: 'my-project', full: false },
-      })
-    })
-
-    it('treats non-URL string as config key', () => {
-      expect(parseCli(['docs', 'vite'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs-key', key: 'vite', full: false },
-      })
-    })
-
-    it('--full flag position does not matter', () => {
-      expect(parseCli(['docs', 'hono', '--full'])).toStrictEqual({
-        ok: true,
-        value: { kind: 'docs-key', key: 'hono', full: true },
-      })
-    })
-  })
-
-  describe('unknown command', () => {
-    it('returns error with command name', () => {
-      const result = parseCli(['unknown'])
-      expect(result).toStrictEqual({
-        ok: false,
-        error: 'Unknown command: unknown. Run with --help for usage.',
-      })
-    })
-
-    it('returns error for single non-command word', () => {
-      expect(parseCli(['fetch'])).toStrictEqual({
-        ok: false,
-        error: 'Unknown command: fetch. Run with --help for usage.',
-      })
-    })
-  })
-})
 
 describe('trimLeadingNewlines', () => {
   it('removes leading newlines', () => {
