@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vite-plus/test'
 
-import { htmlToMarkdown } from './core/converter.ts'
+import { htmlToMarkdown } from './index.ts'
 
 describe('htmlToMarkdown', () => {
   describe('edge cases', () => {

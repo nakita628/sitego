@@ -1,6 +1,6 @@
 import { readConfig } from '../config/index.ts'
-import { htmlToMarkdown } from '../core/converter.ts'
-import { fetchResult } from '../helper/index.ts'
+import { htmlToMarkdown } from '../core/index.ts'
+import { fetchResult } from '../fetch/index.ts'
 
 const HELP_TEXT = `Usage: sitego [command] [options]
 

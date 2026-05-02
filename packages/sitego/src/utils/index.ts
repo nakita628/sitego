@@ -10,24 +10,23 @@ export function trimNewlines(s: string) {
   return trimTrailingNewlines(trimLeadingNewlines(s))
 }
 
-const NAMED_ENTITIES: { readonly [k: string]: string } = {
-  amp: '&',
-  lt: '<',
-  gt: '>',
-  quot: '"',
-  apos: "'",
-  nbsp: ' ',
-  copy: '©',
-  reg: '®',
-  mdash: '—',
-  ndash: '–',
-  laquo: '«',
-  raquo: '»',
-  hellip: '…',
-  trade: '™',
-}
-
 export function decodeEntities(s: string) {
+  const NAMED_ENTITIES: { readonly [k: string]: string } = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+    copy: '©',
+    reg: '®',
+    mdash: '—',
+    ndash: '–',
+    laquo: '«',
+    raquo: '»',
+    hellip: '…',
+    trade: '™',
+  }
   return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, entity: string) => {
     if (entity.startsWith('#x') || entity.startsWith('#X')) {
       const code = Number.parseInt(entity.slice(2), 16)
@@ -41,23 +40,22 @@ export function decodeEntities(s: string) {
   })
 }
 
-const MARKDOWN_ESCAPES = [
-  [/\\/g, '\\\\'],
-  [/\*/g, '\\*'],
-  [/^-/g, '\\-'],
-  [/^\+ /g, '\\+ '],
-  [/^(=+)/g, '\\$1'],
-  [/^(#{1,6}) /g, '\\$1 '],
-  [/`/g, '\\`'],
-  [/^~~~/g, '\\~~~'],
-  [/\[/g, '\\['],
-  [/\]/g, '\\]'],
-  [/^>/g, '\\>'],
-  [/_/g, '\\_'],
-  [/^(\d+)\. /g, '$1\\. '],
-] as const
-
 export function escapeMarkdown(s: string) {
+  const MARKDOWN_ESCAPES = [
+    [/\\/g, '\\\\'],
+    [/\*/g, '\\*'],
+    [/^-/g, '\\-'],
+    [/^\+ /g, '\\+ '],
+    [/^(=+)/g, '\\$1'],
+    [/^(#{1,6}) /g, '\\$1 '],
+    [/`/g, '\\`'],
+    [/^~~~/g, '\\~~~'],
+    [/\[/g, '\\['],
+    [/\]/g, '\\]'],
+    [/^>/g, '\\>'],
+    [/_/g, '\\_'],
+    [/^(\d+)\. /g, '$1\\. '],
+  ] as const
   return MARKDOWN_ESCAPES.reduce(
     (acc, [pattern, replacement]) => acc.replace(pattern, replacement),
     s,
