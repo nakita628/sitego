@@ -4,20 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  sitego-monorepo: 'link:'
-  sitego: link:packages/sitego
-
 importers:
 
   .:
-    dependencies:
-      sitego:
-        specifier: link:packages/sitego
-        version: link:packages/sitego
-      sitego-monorepo:
-        specifier: 'link:'
-        version: 'link:'
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^4.1.2
