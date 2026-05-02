@@ -27,10 +27,6 @@ importers:
         version: 0.1.14(@types/node@25.5.0)(esbuild@0.27.4)(tsx@4.21.0)(typescript@5.9.3)(vite@7.3.1(@types/node@25.5.0)(lightningcss@1.32.0)(tsx@4.21.0))
 
   packages/sitego:
-    dependencies:
-      tsx:
-        specifier: ^4.21.0
-        version: 4.21.0
     devDependencies:
       '@types/node':
         specifier: ^25.5.0
@@ -2511,6 +2507,7 @@ snapshots:
       get-tsconfig: 4.13.7
     optionalDependencies:
       fsevents: 2.3.3
+    optional: true
 
   typescript@5.9.3:
     optional: true

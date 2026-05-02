@@ -5,25 +5,10 @@ import {
   MEANINGFUL_WHEN_BLANK,
   removeChild,
   getTextContent,
-  getElementsByTagName,
+  hasDescendant,
 } from './dom.ts'
 
-/**
- * Collapses whitespace in a DOM tree following HTML rendering rules.
- *
- * @remarks
- * Consecutive whitespace characters (spaces, tabs, newlines) are collapsed
- * into a single space. Leading/trailing whitespace around block elements
- * is removed. Content inside `pre` (and optionally `code` when
- * `preformattedCode` is true) is preserved as-is. Empty text nodes
- * are removed from the tree.
- *
- * This function mutates the tree in place.
- *
- * @param element - The root element to process
- * @param preformattedCode - When true, also preserves whitespace inside `code` elements
- */
-export function collapseWhitespace(element: HtmlElementNode, preformattedCode: boolean): void {
+export function collapseWhitespace(element: HtmlElementNode, preformattedCode: boolean) {
   const isPre = preformattedCode
     ? (n: HtmlNode) => n.nodeName === 'PRE' || n.nodeName === 'CODE'
     : (n: HtmlNode) => n.nodeName === 'PRE'
@@ -80,7 +65,7 @@ function nextTraversalNode(
   prev: HtmlNode | null,
   current: HtmlNode,
   isPre: (n: HtmlNode) => boolean,
-): HtmlNode | null {
+) {
   if ((prev && prev.parentNode === current) || isPre(current)) {
     return current.nextSibling ?? current.parentNode
   }
@@ -90,13 +75,6 @@ function nextTraversalNode(
   return current.nextSibling ?? current.parentNode
 }
 
-/**
- * An HTML node extended with computed metadata for Markdown conversion.
- *
- * @remarks
- * Created by {@link augmentNode} during the conversion pipeline.
- * These properties are used by conversion rules to determine output formatting.
- */
 export type AugmentedNode = HtmlNode & {
   readonly isBlock: boolean
   readonly isCode: boolean
@@ -104,18 +82,6 @@ export type AugmentedNode = HtmlNode & {
   readonly flankingWhitespace: { readonly leading: string; readonly trailing: string }
 }
 
-/**
- * Augments an HTML node with computed metadata for the conversion pipeline.
- *
- * @remarks
- * Computes `isBlock`, `isCode`, `isBlank`, and `flankingWhitespace`
- * properties that conversion rules use to determine spacing and output.
- * This function mutates the node via `Object.assign`.
- *
- * @param node - The HTML node to augment
- * @param options - Options controlling preformatted code handling
- * @returns The same node with augmented properties
- */
 export function augmentNode(
   node: HtmlNode,
   options: { readonly preformattedCode: boolean },
@@ -126,12 +92,10 @@ export function augmentNode(
     node.nodeType === 1 &&
     !VOID_ELEMENTS.has(node.nodeName) &&
     !MEANINGFUL_WHEN_BLANK.has(node.nodeName) &&
-    /^\s*$/i.test(getTextContent(node)) &&
-    !Array.from(VOID_ELEMENTS).some(
-      (tag) => getElementsByTagName(node as HtmlElementNode, tag).length > 0,
-    ) &&
-    !Array.from(MEANINGFUL_WHEN_BLANK).some(
-      (tag) => getElementsByTagName(node as HtmlElementNode, tag).length > 0,
+    /^\s*$/.test(getTextContent(node)) &&
+    !hasDescendant(
+      node,
+      (n) => VOID_ELEMENTS.has(n.nodeName) || MEANINGFUL_WHEN_BLANK.has(n.nodeName),
     )
 
   const flankingWhitespace =
@@ -154,7 +118,7 @@ function isCodeContext(node: HtmlNode): boolean {
 function computeFlankingWhitespace(
   node: HtmlNode,
   options: { readonly preformattedCode: boolean },
-): { readonly leading: string; readonly trailing: string } {
+) {
   const m = getTextContent(node).match(
     /^(([ \t\r\n]*)(\s*))(?:(?=\S)[\s\S]*\S)?((\s*?)([ \t\r\n]*))$/,
   )
@@ -178,7 +142,7 @@ function isFlankedByWhitespace(
   side: 'left' | 'right',
   node: HtmlNode,
   options: { readonly preformattedCode: boolean },
-): boolean {
+) {
   const sibling = side === 'left' ? node.previousSibling : node.nextSibling
   const regExp = side === 'left' ? / $/ : /^ /
   if (!sibling) return false

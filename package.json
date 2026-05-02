@@ -5,29 +5,12 @@
   "scripts": {
     "deps": "mkdir -p /tmp/pnpm-store && pnpm config set store-dir /tmp/pnpm-store &&rm -rf node_modules && rm -rf pnpm-lock.yaml && rm -rf ~/.pnpm-store && pnpm store prune && pnpm install --no-prefer-frozen-lockfile",
     "check": "vp check --fix",
-    "fmt": "vp fmt",
-    "lint": "vp lint",
-    "test": "vp test",
     "coverage": "vp test --coverage",
     "build": "pnpm -F sitego build",
     "release": "pnpm -F sitego release"
   },
-  "dependencies": {
-    "sitego": "link:packages/sitego",
-    "sitego-monorepo": "link:"
-  },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.1.2",
     "vite-plus": "^0.1.14"
-  },
-  "packageManager": "pnpm@10.33.0",
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ],
-    "overrides": {
-      "sitego-monorepo": "link:",
-      "sitego": "link:packages/sitego"
-    }
   }
 }

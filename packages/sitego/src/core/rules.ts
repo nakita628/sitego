@@ -10,14 +10,6 @@ import {
 } from './dom.ts'
 import type { AugmentedNode } from './preprocess.ts'
 
-/**
- * A rule that converts a specific HTML element to Markdown.
- *
- * @remarks
- * Each rule has a `filter` to match elements and a `replacement` function
- * to produce the Markdown output. Rules may optionally define an `append`
- * function for deferred content (e.g., link reference definitions).
- */
 type ConversionRule = {
   readonly filter:
     | string
@@ -32,16 +24,6 @@ type ConversionRule = {
   readonly append?: (options: typeof DEFAULT_OPTIONS, references: string[]) => string
 }
 
-/**
- * The 15 CommonMark conversion rules.
- *
- * @remarks
- * Rules are evaluated in order by {@link findMatchingRule}. The first
- * matching rule is applied. Covers: paragraph, br, headings (h1-h6),
- * blockquote, lists (ul/ol/li), code blocks (indented/fenced), hr,
- * links (inlined/referenced), emphasis (em/i), strong (strong/b),
- * inline code, and images.
- */
 export const COMMONMARK_RULES: readonly ConversionRule[] = [
   {
     filter: 'p',
@@ -80,14 +62,7 @@ export const COMMONMARK_RULES: readonly ConversionRule[] = [
     filter: 'li',
     replacement: (content, node, options) => {
       const parent = node.parentNode
-      const prefix =
-        parent && parent.nodeName === 'OL'
-          ? (() => {
-              const start = getAttribute(parent, 'start')
-              const index = getChildren(parent).indexOf(node)
-              return `${start ? Number(start) + index : index + 1}.  `
-            })()
-          : `${options.bulletListMarker}   `
+      const prefix = olItemPrefix(parent, node) ?? `${options.bulletListMarker}   `
 
       const isParagraph = content.endsWith('\n')
       const trimmed = trimNewlines(content) + (isParagraph ? '\n' : '')
@@ -201,7 +176,7 @@ export const COMMONMARK_RULES: readonly ConversionRule[] = [
       if (!content) return ''
       const normalized = content.replace(/\r?\n|\r/g, ' ')
       const extraSpace = /^`|^ .*?[^ ].* $|`$/.test(normalized) ? ' ' : ''
-      const matches: readonly string[] = normalized.match(/`+/gm) ?? []
+      const matches = normalized.match(/`+/gm) ?? []
       const findDelimiter = (d: string): string =>
         matches.includes(d) ? findDelimiter(`${d}\``) : d
       const delimiter = findDelimiter('`')
@@ -220,24 +195,22 @@ export const COMMONMARK_RULES: readonly ConversionRule[] = [
   },
 ]
 
-/**
- * Finds the first conversion rule whose filter matches the given element.
- *
- * @param rules - Array of conversion rules to search
- * @param node - The HTML element to match against
- * @param options - Current conversion options (passed to function filters)
- * @returns The matching rule, or `undefined` if no rule matches
- */
+function olItemPrefix(parent: HtmlElementNode | null, node: HtmlElementNode) {
+  if (!parent || parent.nodeName !== 'OL') return null
+  const start = getAttribute(parent, 'start')
+  const index = getChildren(parent).indexOf(node)
+  return `${start ? Number(start) + index : index + 1}.  `
+}
+
 export function findMatchingRule(
   rules: readonly ConversionRule[],
   node: HtmlElementNode,
   options: typeof DEFAULT_OPTIONS,
-): ConversionRule | undefined {
-  return rules.find((rule) => {
-    const { filter } = rule
-    if (typeof filter === 'string') return filter === node.nodeName.toLowerCase()
-    if (Array.isArray(filter)) return filter.includes(node.nodeName.toLowerCase())
+) {
+  const lower = node.nodeName.toLowerCase()
+  return rules.find(({ filter }) => {
+    if (typeof filter === 'string') return filter === lower
     if (typeof filter === 'function') return filter(node, options)
-    return false
+    return filter.includes(lower)
   })
 }

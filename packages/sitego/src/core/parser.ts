@@ -2,9 +2,7 @@ import { decodeEntities } from '../utils/index.ts'
 import type { HtmlElementNode, HtmlNode, HtmlTextNode } from './dom.ts'
 import { VOID_ELEMENTS, RAW_TEXT_ELEMENTS } from './dom.ts'
 
-function charAt(s: string, i: number): string {
-  return s[i] ?? ''
-}
+type ParserState = { html: string; pos: number }
 
 function createElement(tagName: string): HtmlElementNode {
   return {
@@ -29,7 +27,7 @@ function createTextNode(data: string): HtmlTextNode {
   }
 }
 
-function appendChild(parent: HtmlElementNode, child: HtmlNode): void {
+function appendChild(parent: HtmlElementNode, child: HtmlNode) {
   const prev = parent.childNodes.at(-1) ?? null
   child.parentNode = parent
   child.previousSibling = prev
@@ -37,31 +35,24 @@ function appendChild(parent: HtmlElementNode, child: HtmlNode): void {
   parent.childNodes.push(child)
 }
 
-/**
- * Parses an HTML string into a DOM-like tree structure.
- *
- * @remarks
- * This is a self-contained HTML parser that replaces the `domino` dependency.
- * It handles comments, doctype, void elements, raw text elements
- * (`script`/`style`), and entity decoding. Tag names are normalized
- * to uppercase. Adjacent text nodes are merged automatically.
- *
- * The returned root element is a synthetic `X-TURNDOWN` element
- * wrapping all parsed content.
- *
- * @param html - Raw HTML string to parse
- * @returns Root element node containing the parsed tree
- */
-export function parseHtml(html: string): HtmlElementNode {
+const WS = /\s/
+const NOT_ATTR_NAME_END = /[^\s=/>]/
+const NOT_UNQUOTED_VALUE_END = /[^\s>]/
+
+function skipWhile(state: ParserState, re: RegExp) {
+  while (state.pos < state.html.length && re.test(state.html.charAt(state.pos))) state.pos++
+}
+
+export function parseHtml(html: string) {
   const root = createElement('X-TURNDOWN')
   root.attributes.set('id', 'turndown-root')
   const stack: HtmlElementNode[] = [root]
-  const state = { html, pos: 0 }
+  const state: ParserState = { html, pos: 0 }
 
   while (state.pos < state.html.length) {
     const current = stack[stack.length - 1]
 
-    if (charAt(state.html, state.pos) === '<') {
+    if (state.html.charAt(state.pos) === '<') {
       if (state.html.startsWith('<!--', state.pos)) {
         const endIdx = state.html.indexOf('-->', state.pos + 4)
         state.pos = endIdx === -1 ? state.html.length : endIdx + 3
@@ -81,12 +72,8 @@ export function parseHtml(html: string): HtmlElementNode {
             .slice(state.pos + 2, closeEnd)
             .trim()
             .toUpperCase()
-          for (let i = stack.length - 1; i > 0; i--) {
-            if (stack[i]?.nodeName === tagName) {
-              stack.length = i
-              break
-            }
-          }
+          const idx = stack.findLastIndex((n, i) => i > 0 && n.nodeName === tagName)
+          if (idx !== -1) stack.length = idx
           state.pos = closeEnd + 1
           continue
         }
@@ -131,10 +118,7 @@ export function parseHtml(html: string): HtmlElementNode {
   return root
 }
 
-function parseOpenTag(state: {
-  html: string
-  pos: number
-}): { readonly element: HtmlElementNode; readonly selfClosing: boolean } | null {
+function parseOpenTag(state: ParserState) {
   const tagNameMatch = /^<([a-zA-Z][a-zA-Z0-9-]*)/.exec(state.html.slice(state.pos))
   if (!tagNameMatch?.[1]) return null
 
@@ -144,47 +128,43 @@ function parseOpenTag(state: {
 
   parseAttributesInto(state, elem.attributes)
 
-  const selfClosing = charAt(state.html, state.pos - 1) === '/' || VOID_ELEMENTS.has(tagName)
+  const selfClosing = state.html.charAt(state.pos - 1) === '/' || VOID_ELEMENTS.has(tagName)
   return { element: elem, selfClosing }
 }
 
-function parseAttributesInto(
-  state: { html: string; pos: number },
-  attrs: Map<string, string>,
-): void {
+function parseAttributesInto(state: ParserState, attrs: Map<string, string>) {
   while (state.pos < state.html.length) {
-    while (state.pos < state.html.length && /\s/.test(charAt(state.html, state.pos))) state.pos++
+    skipWhile(state, WS)
 
-    if (charAt(state.html, state.pos) === '>') {
+    const ch = state.html.charAt(state.pos)
+    if (ch === '>') {
       state.pos++
       return
     }
-    if (charAt(state.html, state.pos) === '/' && charAt(state.html, state.pos + 1) === '>') {
+    if (ch === '/' && state.html.charAt(state.pos + 1) === '>') {
       state.pos += 2
       return
     }
 
     const nameStart = state.pos
-    while (state.pos < state.html.length && !/[\s=/>]/.test(charAt(state.html, state.pos))) {
-      state.pos++
-    }
+    skipWhile(state, NOT_ATTR_NAME_END)
     const name = state.html.slice(nameStart, state.pos).toLowerCase()
     if (!name) {
       state.pos++
       continue
     }
 
-    while (state.pos < state.html.length && /\s/.test(charAt(state.html, state.pos))) state.pos++
+    skipWhile(state, WS)
 
-    if (charAt(state.html, state.pos) !== '=') {
+    if (state.html.charAt(state.pos) !== '=') {
       attrs.set(name, '')
       continue
     }
     state.pos++
 
-    while (state.pos < state.html.length && /\s/.test(charAt(state.html, state.pos))) state.pos++
+    skipWhile(state, WS)
 
-    const quote = charAt(state.html, state.pos)
+    const quote = state.html.charAt(state.pos)
     if (quote === '"' || quote === "'") {
       state.pos++
       const valueStart = state.pos
@@ -198,9 +178,7 @@ function parseAttributesInto(
       }
     } else {
       const valueStart = state.pos
-      while (state.pos < state.html.length && !/[\s>]/.test(charAt(state.html, state.pos))) {
-        state.pos++
-      }
+      skipWhile(state, NOT_UNQUOTED_VALUE_END)
       attrs.set(name, decodeEntities(state.html.slice(valueStart, state.pos)))
     }
   }

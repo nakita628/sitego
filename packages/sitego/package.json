@@ -21,9 +21,6 @@
     "typecheck": "tsgo --noEmit",
     "release": "npm pkg fix && pnpm build && npm publish"
   },
-  "dependencies": {
-    "tsx": "^4.21.0"
-  },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "tsdown": "^0.21.7"
