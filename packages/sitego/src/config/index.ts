@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-function parseConfig(config: unknown) {
+export function parseConfig(config: unknown) {
   if (typeof config !== 'object' || config === null || Array.isArray(config)) {
     return { ok: false, error: 'Invalid config: must be an object' } as const
   }
@@ -51,5 +51,8 @@ export function defineConfig(config: {
   readonly llms?: { readonly [k: string]: string }
   readonly 'llm-full'?: { readonly [k: string]: string }
 }) {
-  return config
+  return {
+    llms: config.llms ?? {},
+    'llm-full': config['llm-full'] ?? {},
+  }
 }
