@@ -1,6 +1,6 @@
 {
   "name": "sitego",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Fetch HTML and convert to Markdown",
   "license": "MIT",
   "bin": {
@@ -20,9 +20,6 @@
     "build": "tsdown",
     "typecheck": "tsgo --noEmit",
     "release": "npm pkg fix && pnpm build && npm publish"
-  },
-  "dependencies": {
-    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
