@@ -3,7 +3,6 @@ import { describe, it, expect } from 'vite-plus/test'
 import {
   trimLeadingNewlines,
   trimTrailingNewlines,
-  trimNewlines,
   decodeEntities,
   escapeMarkdown,
   cleanAttribute,
@@ -46,16 +45,6 @@ describe('trimTrailingNewlines', () => {
 
   it('returns string unchanged when no trailing newlines', () => {
     expect(trimTrailingNewlines('hello')).toBe('hello')
-  })
-})
-
-describe('trimNewlines', () => {
-  it('removes both leading and trailing newlines', () => {
-    expect(trimNewlines('\n\nhello\n\n')).toBe('hello')
-  })
-
-  it('preserves inner newlines', () => {
-    expect(trimNewlines('\nhello\nworld\n')).toBe('hello\nworld')
   })
 })
 

@@ -6,10 +6,6 @@ export function trimTrailingNewlines(s: string) {
   return s.replace(/\n*$/, '')
 }
 
-export function trimNewlines(s: string) {
-  return trimTrailingNewlines(trimLeadingNewlines(s))
-}
-
 export function decodeEntities(s: string) {
   const NAMED_ENTITIES: { readonly [k: string]: string } = {
     amp: '&',
@@ -29,10 +25,12 @@ export function decodeEntities(s: string) {
   }
   return s.replace(/&(#x?[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, entity: string) => {
     if (entity.startsWith('#x') || entity.startsWith('#X')) {
+      // Hex numeric character reference (e.g. &#x1F600;): drop the 2-char "#x"/"#X" prefix, parse as base 16
       const code = Number.parseInt(entity.slice(2), 16)
       return Number.isNaN(code) ? match : String.fromCodePoint(code)
     }
     if (entity.startsWith('#')) {
+      // Decimal numeric character reference (e.g. &#169;): drop the 1-char "#" prefix, parse as base 10
       const code = Number.parseInt(entity.slice(1), 10)
       return Number.isNaN(code) ? match : String.fromCodePoint(code)
     }

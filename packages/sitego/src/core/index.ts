@@ -3,7 +3,6 @@ import {
   decodeEntities,
   escapeMarkdown,
   trimLeadingNewlines,
-  trimNewlines,
   trimTrailingNewlines,
 } from '../utils/index.ts'
 
@@ -25,8 +24,18 @@ export function htmlToMarkdown(
 ) {
   if (!html) return ''
 
+  const ELEMENT_NODE = 1 as const
+  const TEXT_NODE = 3 as const
+
+  const COMMENT_OPEN = '<!--' as const
+  const COMMENT_CLOSE = '-->' as const
+  const CDATA_OR_DOCTYPE_OPEN = '<!' as const
+  const PROCESSING_INSTRUCTION_OPEN = '<?' as const
+  const CLOSE_TAG_OPEN = '</' as const
+  const SELF_CLOSE = '/>' as const
+
   type HtmlTextNode = {
-    readonly nodeType: 3
+    readonly nodeType: typeof TEXT_NODE
     readonly nodeName: '#text'
     data: string
     parentNode: HtmlElementNode | null
@@ -34,7 +43,7 @@ export function htmlToMarkdown(
     previousSibling: HtmlNode | null
   }
   type HtmlElementNode = {
-    readonly nodeType: 1
+    readonly nodeType: typeof ELEMENT_NODE
     readonly nodeName: string
     readonly attributes: Map<string, string>
     readonly childNodes: HtmlNode[]
@@ -175,7 +184,7 @@ export function htmlToMarkdown(
   }
 
   const getTextContent = (node: HtmlNode): string => {
-    if (node.nodeType === 3) return node.data
+    if (node.nodeType === TEXT_NODE) return node.data
     return node.childNodes.reduce((acc, c) => acc + getTextContent(c), '')
   }
 
@@ -184,7 +193,7 @@ export function htmlToMarkdown(
   const getFirstChild = (node: HtmlElementNode) => node.childNodes[0] ?? null
 
   const getChildren = (node: HtmlElementNode) =>
-    node.childNodes.filter((c): c is HtmlElementNode => c.nodeType === 1)
+    node.childNodes.filter((c): c is HtmlElementNode => c.nodeType === ELEMENT_NODE)
 
   const getLastElementChild = (node: HtmlElementNode) => {
     const children = getChildren(node)
@@ -196,14 +205,14 @@ export function htmlToMarkdown(
     predicate: (n: HtmlElementNode) => boolean,
   ): boolean => {
     for (const child of node.childNodes) {
-      if (child.nodeType !== 1) continue
+      if (child.nodeType !== ELEMENT_NODE) continue
       if (predicate(child) || hasDescendant(child, predicate)) return true
     }
     return false
   }
 
   const createElement = (tagName: string): HtmlElementNode => ({
-    nodeType: 1,
+    nodeType: ELEMENT_NODE,
     nodeName: tagName.toUpperCase(),
     attributes: new Map(),
     childNodes: [],
@@ -213,7 +222,7 @@ export function htmlToMarkdown(
   })
 
   const createTextNode = (data: string): HtmlTextNode => ({
-    nodeType: 3,
+    nodeType: TEXT_NODE,
     nodeName: '#text',
     data,
     parentNode: null,
@@ -245,8 +254,8 @@ export function htmlToMarkdown(
         state.pos++
         return
       }
-      if (ch === '/' && state.html.charAt(state.pos + 1) === '>') {
-        state.pos += 2
+      if (state.html.startsWith(SELF_CLOSE, state.pos)) {
+        state.pos += SELF_CLOSE.length
         return
       }
 
@@ -312,23 +321,26 @@ export function htmlToMarkdown(
       const current = stack[stack.length - 1]
 
       if (state.html.charAt(state.pos) === '<') {
-        if (state.html.startsWith('<!--', state.pos)) {
-          const endIdx = state.html.indexOf('-->', state.pos + 4)
-          state.pos = endIdx === -1 ? state.html.length : endIdx + 3
+        if (state.html.startsWith(COMMENT_OPEN, state.pos)) {
+          const endIdx = state.html.indexOf(COMMENT_CLOSE, state.pos + COMMENT_OPEN.length)
+          state.pos = endIdx === -1 ? state.html.length : endIdx + COMMENT_CLOSE.length
           continue
         }
 
-        if (state.html.startsWith('<!', state.pos) || state.html.startsWith('<?', state.pos)) {
-          const endIdx = state.html.indexOf('>', state.pos + 2)
+        if (
+          state.html.startsWith(CDATA_OR_DOCTYPE_OPEN, state.pos) ||
+          state.html.startsWith(PROCESSING_INSTRUCTION_OPEN, state.pos)
+        ) {
+          const endIdx = state.html.indexOf('>', state.pos + CDATA_OR_DOCTYPE_OPEN.length)
           state.pos = endIdx === -1 ? state.html.length : endIdx + 1
           continue
         }
 
-        if (state.html.startsWith('</', state.pos)) {
-          const closeEnd = state.html.indexOf('>', state.pos + 2)
+        if (state.html.startsWith(CLOSE_TAG_OPEN, state.pos)) {
+          const closeEnd = state.html.indexOf('>', state.pos + CLOSE_TAG_OPEN.length)
           if (closeEnd !== -1) {
             const tagName = state.html
-              .slice(state.pos + 2, closeEnd)
+              .slice(state.pos + CLOSE_TAG_OPEN.length, closeEnd)
               .trim()
               .toUpperCase()
             const idx = stack.findLastIndex((n, i) => i > 0 && n.nodeName === tagName)
@@ -365,7 +377,7 @@ export function htmlToMarkdown(
       const text = decodeEntities(state.html.slice(state.pos, end))
       if (text && current) {
         const lastChild = current.childNodes.at(-1)
-        if (lastChild && lastChild.nodeType === 3) {
+        if (lastChild && lastChild.nodeType === TEXT_NODE) {
           lastChild.data += text
         } else {
           appendChild(current, createTextNode(text))
@@ -385,7 +397,7 @@ export function htmlToMarkdown(
     if ((prev && prev.parentNode === current) || isPre(current)) {
       return current.nextSibling ?? current.parentNode
     }
-    if (current.nodeType === 1) {
+    if (current.nodeType === ELEMENT_NODE) {
       return current.childNodes[0] ?? current.nextSibling ?? current.parentNode
     }
     return current.nextSibling ?? current.parentNode
@@ -400,7 +412,7 @@ export function htmlToMarkdown(
     let node: HtmlNode | null = nextTraversalNode(prev, element)
 
     while (node && node !== element) {
-      if (node.nodeType === 3) {
+      if (node.nodeType === TEXT_NODE) {
         const text = node.data.replace(/[ \r\n\t]+/g, ' ')
         const trimmedText =
           (!prevText || prevText.data.endsWith(' ')) && !keepLeadingWs && text[0] === ' '
@@ -416,7 +428,7 @@ export function htmlToMarkdown(
 
         node.data = trimmedText
         prevText = node
-      } else if (node.nodeType === 1) {
+      } else if (node.nodeType === ELEMENT_NODE) {
         if (BLOCK_ELEMENTS.has(node.nodeName) || node.nodeName === 'BR') {
           if (prevText) prevText.data = prevText.data.replace(/ $/, '')
           prevText = null
@@ -447,9 +459,9 @@ export function htmlToMarkdown(
     const sibling = side === 'left' ? node.previousSibling : node.nextSibling
     const regExp = side === 'left' ? / $/ : /^ /
     if (!sibling) return false
-    if (sibling.nodeType === 3) return regExp.test(sibling.data)
+    if (sibling.nodeType === TEXT_NODE) return regExp.test(sibling.data)
     if (options.preformattedCode && sibling.nodeName === 'CODE') return false
-    if (sibling.nodeType === 1 && !BLOCK_ELEMENTS.has(sibling.nodeName)) {
+    if (sibling.nodeType === ELEMENT_NODE && !BLOCK_ELEMENTS.has(sibling.nodeName)) {
       return regExp.test(getTextContent(sibling))
     }
     return false
@@ -476,10 +488,10 @@ export function htmlToMarkdown(
   }
 
   const augmentNode = (node: HtmlNode): AugmentedNode => {
-    const nodeIsBlock = node.nodeType === 1 && BLOCK_ELEMENTS.has(node.nodeName)
+    const nodeIsBlock = node.nodeType === ELEMENT_NODE && BLOCK_ELEMENTS.has(node.nodeName)
     const nodeIsCode = isCodeContext(node)
     const nodeIsBlank =
-      node.nodeType === 1 &&
+      node.nodeType === ELEMENT_NODE &&
       !VOID_ELEMENTS.has(node.nodeName) &&
       !MEANINGFUL_WHEN_BLANK.has(node.nodeName) &&
       /^\s*$/.test(getTextContent(node)) &&
@@ -530,7 +542,8 @@ export function htmlToMarkdown(
     },
     {
       filter: 'blockquote',
-      replacement: (content) => `\n\n${trimNewlines(content).replace(/^/gm, '> ')}\n\n`,
+      replacement: (content) =>
+        `\n\n${trimTrailingNewlines(trimLeadingNewlines(content)).replace(/^/gm, '> ')}\n\n`,
     },
     {
       filter: ['ul', 'ol'],
@@ -549,7 +562,8 @@ export function htmlToMarkdown(
         const prefix = olItemPrefix(parent, node) ?? `${options.bulletListMarker}   `
 
         const isParagraph = content.endsWith('\n')
-        const trimmed = trimNewlines(content) + (isParagraph ? '\n' : '')
+        const trimmed =
+          trimTrailingNewlines(trimLeadingNewlines(content)) + (isParagraph ? '\n' : '')
         const indented = trimmed.replace(/\n/gm, `\n${' '.repeat(prefix.length)}`)
         return `${prefix}${indented}${node.nextSibling ? '\n' : ''}`
       },
@@ -574,7 +588,7 @@ export function htmlToMarkdown(
         getFirstChild(node)!.nodeName === 'CODE',
       replacement: (_content, node) => {
         const first = getFirstChild(node)
-        if (!first || first.nodeType !== 1) return ''
+        if (!first || first.nodeType !== ELEMENT_NODE) return ''
         const className = getAttribute(first, 'class') ?? ''
         const langMatch = className.match(/language-(\S+)/)
         const language = langMatch ? langMatch[1] : ''
@@ -720,7 +734,7 @@ export function htmlToMarkdown(
   const processNode = (parentNode: HtmlElementNode, references: string[]): string =>
     parentNode.childNodes.reduce((output, child) => {
       const node = augmentNode(child)
-      if (node.nodeType === 3) {
+      if (node.nodeType === TEXT_NODE) {
         return joinOutput(output, node.isCode ? node.data : escapeMarkdown(node.data))
       }
       return joinOutput(output, replacementForElement(node, references))
