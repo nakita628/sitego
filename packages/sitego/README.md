@@ -14,6 +14,9 @@ npm install -D sitego
 # Convert HTML to Markdown
 npx sitego search https://example.com
 
+# Convert HTML to Markdown by config key
+npx sitego search example
+
 # Fetch llms.txt by URL
 npx sitego docs https://hono.dev/llms.txt
 
@@ -24,13 +27,18 @@ npx sitego docs hono
 npx sitego docs hono --full
 ```
 
-## Config
+## Config (optional)
+
+Register keys so you can pass them instead of URLs.
 
 ```ts
 // sitego.config.ts
 import { defineConfig } from 'sitego/config'
 
 export default defineConfig({
+  search: {
+    example: 'https://example.com',
+  },
   llms: {
     hono: 'https://hono.dev/llms.txt',
   },
