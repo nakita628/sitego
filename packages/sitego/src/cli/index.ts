@@ -5,26 +5,29 @@ import { fetchResult } from '../fetch/index.ts'
 const HELP_TEXT = `Usage: sitego [command] [options]
 
 Commands:
-  docs <url|key>   Fetch llms.txt (URL or config key)
-  search <url>     Fetch URL and convert to Markdown
+  docs <url|key>     Fetch llms.txt (URL or config key)
+  search <url|key>   Fetch URL and convert to Markdown (URL or config key)
 
 Options:
-  --full           Use llm-full URL (with docs key)
-  -h, --help       Display help`
+  --full             Use llm-full URL (with docs key)
+  -h, --help         Display help`
 
 export function parseCli(args: readonly string[]) {
   if (args.length === 0 || args.includes('-h') || args.includes('--help')) {
     return { ok: true, value: { kind: 'help' } } as const
   }
   const command = args[0]
-  if (command === 'search' && args.length >= 2) {
-    const url = args[1]
-    if (!url) {
-      return { ok: false, error: 'search command requires a URL argument.' } as const
+  if (command === 'search') {
+    const target = args[1]
+    if (!target) {
+      return { ok: false, error: 'search command requires a URL or key argument.' } as const
     }
-    return { ok: true, value: { kind: 'search', url } } as const
+    if (target.startsWith('http://') || target.startsWith('https://')) {
+      return { ok: true, value: { kind: 'search', url: target } } as const
+    }
+    return { ok: true, value: { kind: 'search-key', key: target } } as const
   }
-  if (command === 'docs' && args.length >= 2) {
+  if (command === 'docs') {
     const target = args[1]
     if (!target) {
       return { ok: false, error: 'docs command requires a URL or key argument.' } as const
@@ -48,6 +51,25 @@ export async function sitego() {
   }
   if (command.kind === 'search') {
     const result = await fetchResult(command.url)
+    if (!result.ok) return result
+    return { ok: true, value: htmlToMarkdown(result.value) } as const
+  }
+  if (command.kind === 'search-key') {
+    const configResult = await readConfig()
+    if (!configResult.ok) return configResult
+    const source = configResult.value.search
+    const url = source[command.key]
+    if (!url) {
+      const available = Object.keys(source)
+      return {
+        ok: false,
+        error:
+          available.length > 0
+            ? `Key "${command.key}" not found. Available: ${available.join(', ')}`
+            : `Key "${command.key}" not found. No keys configured in search.`,
+      } as const
+    }
+    const result = await fetchResult(url)
     if (!result.ok) return result
     return { ok: true, value: htmlToMarkdown(result.value) } as const
   }

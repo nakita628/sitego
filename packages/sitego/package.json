@@ -1,6 +1,6 @@
 {
   "name": "sitego",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Fetch HTML and convert to Markdown",
   "license": "MIT",
   "bin": {
@@ -14,6 +14,10 @@
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "default": "./dist/core.js"
     }
   },
   "scripts": {

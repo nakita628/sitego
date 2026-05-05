@@ -1,6 +1,9 @@
 import { defineConfig } from 'sitego/config'
 
 export default defineConfig({
+  search: {
+    hono: 'https://hono.dev/',
+  },
   llms: {
     hono: 'https://hono.dev/llms.txt',
     vite: 'https://vite.dev/llms.txt',
