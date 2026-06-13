@@ -1,8 +1,16 @@
 {
   "name": "sitego",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Fetch HTML and convert to Markdown",
+  "homepage": "https://github.com/nakita628/sitego",
+  "bugs": {
+    "url": "https://github.com/nakita628/sitego/issues"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nakita628/sitego.git"
+  },
   "bin": {
     "sitego": "dist/index.js"
   },
