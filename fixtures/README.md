@@ -28,7 +28,7 @@ npx sitego docs hono --full
 
 ```ts
 // sitego.config.ts
-import { defineConfig } from 'sitego/config'
+import { defineConfig } from 'sitego'
 
 export default defineConfig({
   llms: {
