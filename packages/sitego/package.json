@@ -12,13 +12,17 @@
     "url": "git+https://github.com/nakita628/sitego.git"
   },
   "bin": {
-    "sitego": "dist/index.js"
+    "sitego": "dist/bin.js"
   },
   "files": [
     "dist"
   ],
   "type": "module",
   "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./config": {
       "types": "./dist/config.d.ts",
       "default": "./dist/config.js"

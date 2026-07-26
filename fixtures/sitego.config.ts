@@ -1,4 +1,4 @@
-import { defineConfig } from 'sitego/config'
+import { defineConfig } from 'sitego'
 
 export default defineConfig({
   search: {
