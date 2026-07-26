@@ -1,6 +1,6 @@
 {
   "name": "sitego",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "Fetch HTML and convert to Markdown",
   "homepage": "https://github.com/nakita628/sitego",
   "bugs": {
